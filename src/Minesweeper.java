@@ -3,6 +3,7 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.Arrays;
+import java.util.Random;
 
 public class Minesweeper extends JPanel implements MouseListener {
 
@@ -32,7 +33,7 @@ public class Minesweeper extends JPanel implements MouseListener {
         this.g = graphics;
         super.paintComponent(g);
 
-        for(int r = 0; r < boardWidth/Constants.TILE_SIZE; r++){
+        for(int r = 0; r < boardHeight/Constants.TILE_SIZE; r++){
             for(int c = 0; c < boardHeight/Constants.TILE_SIZE; c++){
                 fillTileBackground(r,c);
                 drawNumberOnTile(r,c);
@@ -43,7 +44,9 @@ public class Minesweeper extends JPanel implements MouseListener {
     }
 
     public void fillTileBackground(int r, int c){
-        if(!grid[r][c].isClicked()){
+        if(grid[r][c].rightClicked()){
+            g.setColor(Constants.COLOR_FLAG);
+        } else if(!grid[r][c].isClicked()){
             g.setColor(Constants.COLOR_GREEN);
         } else {
             if(!grid[r][c].hasMine()){
@@ -57,7 +60,7 @@ public class Minesweeper extends JPanel implements MouseListener {
     }
 
     public void drawNumberOnTile(int r, int c){
-        if(grid[r][c].isClicked() && !grid[r][c].hasMine()){
+        if(grid[r][c].isClicked() && !grid[r][c].hasMine() && grid[r][c].getNumSurroundingMines() != 0){
             int x = c * Constants.TILE_SIZE + Constants.TILE_SIZE/2 - 5;
             int y = r * Constants.TILE_SIZE + Constants.TILE_SIZE/2 + 9;
            // System.out.println(x + ","+y);
@@ -75,14 +78,23 @@ public class Minesweeper extends JPanel implements MouseListener {
     }
     @Override
     public void mouseClicked(MouseEvent e) {
+
         PointerInfo a = MouseInfo.getPointerInfo();
         Point point = new Point(a.getLocation());
         SwingUtilities.convertPointFromScreen(point, e.getComponent());
         int x =(int) point.getX();
         int y=(int) point.getY();
-     //   System.out.println(x + ", " + y);
 
-        handleMouseClick(x,y);
+        if(e.getButton() == MouseEvent.BUTTON1){
+
+            handleLeftClick(x,y);
+
+        } else if (e.getButton() == MouseEvent.BUTTON3){
+
+            handleRightClick(x,y);
+
+        }
+
     }
 
     @Override
@@ -113,6 +125,18 @@ public class Minesweeper extends JPanel implements MouseListener {
                 grid[r][c] = new Tile(false);
             }
         }
+        int numMines = boardWidth/Constants.TILE_SIZE * boardHeight/Constants.TILE_SIZE / 5;
+        int count = 0;
+        while(count < numMines){
+            Random random = new Random();
+            int ranNum1 = random.nextInt(grid.length);
+            int ranNum2 = random.nextInt(grid[0].length);
+            if(!grid[ranNum1][ranNum2].hasMine()) {
+                grid[ranNum1][ranNum2] = new Tile(true);
+                count++;
+            }
+        }
+
         // randomly place n mines
         grid[3][2] = new Tile(true);
         grid[5][6] = new Tile(true);
@@ -148,14 +172,46 @@ public class Minesweeper extends JPanel implements MouseListener {
 
     }
 
-    public void handleMouseClick(int xpos, int ypos){
+    public void handleLeftClick(int xpos, int ypos){
         int col = xpos/Constants.TILE_SIZE;
         int row = ypos/Constants.TILE_SIZE;
         //System.out.println(row + ", " + col);
-        if(!grid[row][col].isClicked()){
-            grid[row][col].setClicked();
+        if(!onBoard(row,col) || grid[row][col].isClicked() || grid[row][col].rightClicked()){
+            return;
+        }
+        grid[row][col].setClicked();
+
+        if(grid[row][col].getNumSurroundingMines() == 0 && !grid[row][col].hasMine()){
+            clickAllZeroTiles(row,col);
         }
         repaint();
+    }
+
+    public void handleRightClick(int xpos, int ypos){
+        int col = xpos/Constants.TILE_SIZE;
+        int row = ypos/Constants.TILE_SIZE;
+
+        if(!onBoard(row,col) || grid[row][col].isClicked()){
+            return;
+        }
+
+        if(grid[row][col].rightClicked()){
+            grid[row][col].unsetRightClicked();
+        } else {
+            grid[row][col].setRightClicked();
+        }
+        repaint();
+    }
+
+    public void clickAllZeroTiles(int row, int col){
+        if(onBoard(row-1,col-1)) handleLeftClick((col - 1)*Constants.TILE_SIZE,(row-1)*Constants.TILE_SIZE);
+        if(onBoard(row,col-1)) handleLeftClick((col - 1)*Constants.TILE_SIZE,(row)*Constants.TILE_SIZE);
+        if(onBoard(row+1,col-1)) handleLeftClick((col - 1)*Constants.TILE_SIZE,(row+1)*Constants.TILE_SIZE);
+        if(onBoard(row-1,col))handleLeftClick((col)*Constants.TILE_SIZE,(row-1)*Constants.TILE_SIZE);
+        if(onBoard(row+1,col)) handleLeftClick((col)*Constants.TILE_SIZE,(row+1)*Constants.TILE_SIZE);
+        if(onBoard(row-1,col+1)) handleLeftClick((col + 1)*Constants.TILE_SIZE,(row-1)*Constants.TILE_SIZE);
+        if(onBoard(row,col+1))handleLeftClick((col + 1)*Constants.TILE_SIZE,(row)*Constants.TILE_SIZE);
+        if(onBoard(row+1,col+1))handleLeftClick((col + 1)*Constants.TILE_SIZE,(row+1)*Constants.TILE_SIZE);
     }
 
 
