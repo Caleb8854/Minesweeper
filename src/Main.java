@@ -1,19 +1,26 @@
 import javax.swing.*;
+import java.awt.*;
 
 public class Main {
     public static void main(String[] args) {
 
-        JFrame frame = new JFrame();
-        int width = 600;
-        int height = 600;
-        frame.setVisible(true);
-        frame.setSize(width,height);
-        frame.setLocationRelativeTo(null);
-        frame.setResizable(false);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        int width = 800;
+        int height = 650;
 
-        Minesweeper minesweeper = new Minesweeper(width,height,15);
-        frame.add(minesweeper);
+        JFrame frame = new JFrame("Minesweeper");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new BorderLayout());
+
+        JPanel header = new JPanel();
+        header.setPreferredSize(new Dimension(width, 50));
+        header.setBackground(Color.BLUE);
+        Minesweeper minesweeper = new Minesweeper(width, height - 50, header);
+
+        frame.add(header, BorderLayout.NORTH);
+        frame.add(minesweeper, BorderLayout.CENTER);
+
         frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
     }
 }
