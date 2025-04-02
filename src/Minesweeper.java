@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.Timer;
@@ -47,7 +48,8 @@ public class Minesweeper extends JPanel implements MouseListener {
 
     public void updatePanel2Text() {
         header.removeAll();
-        JLabel label = new JLabel("Flags: " + flagCount + "   Time: " + stopwatch.getTime(TimeUnit.SECONDS));
+        long time = stopwatch.getTime(TimeUnit.SECONDS);
+        JLabel label = new JLabel("Flags: " + flagCount + "   Time: " + time);
         label.setForeground(Color.WHITE);
         header.add(label);
         header.revalidate();
@@ -125,7 +127,7 @@ public class Minesweeper extends JPanel implements MouseListener {
             updatePanel2Text();
 
         }
-        updateUI();
+
 
     }
 
@@ -157,29 +159,46 @@ public class Minesweeper extends JPanel implements MouseListener {
                 grid[r][c] = new Tile(false);
             }
         }
+
+
+    }
+
+    public void generateBoard(int rowFirstClicked, int colFirstClicked){
         int numMines = boardWidth/Constants.TILE_SIZE * boardHeight/Constants.TILE_SIZE / 5;
         int count = 0;
+        grid[rowFirstClicked][colFirstClicked].setNumSurroundingMines(0);
+        ArrayList<Tile> allSurroundingTiles = surroundingTiles(rowFirstClicked,colFirstClicked);
         while(count < numMines){
             Random random = new Random();
             int ranNum1 = random.nextInt(grid.length);
             int ranNum2 = random.nextInt(grid[0].length);
+            if(allSurroundingTiles.contains(grid[ranNum1][ranNum2])){
+                continue;
+            }
             if(!grid[ranNum1][ranNum2].hasMine()) {
                 grid[ranNum1][ranNum2] = new Tile(true);
                 count++;
             }
         }
 
-        // randomly place n mines
 
-
-       // board generated above
-        //now that the board is generated, for each tile, count the number of mines surrounding it
         for(int r = 0; r < grid.length; r++){
             for(int c = 0; c < grid[r].length; c++){
                 grid[r][c].setNumSurroundingMines(countSurroundingMines(r,c));
             }
         }
+    }
 
+    public ArrayList<Tile> surroundingTiles(int r, int c){
+        ArrayList<Tile> tiles = new ArrayList<Tile>();
+        for(int i = r-1; i <= r+1; i++) {
+            for (int j = c - 1; j <= c + 1; j++) {
+                if (onBoard(i, j)) {
+                    tiles.add(grid[i][j]);
+                }
+            }
+        }
+        return tiles;
     }
 
     public int countSurroundingMines(int r, int c){
@@ -209,7 +228,11 @@ public class Minesweeper extends JPanel implements MouseListener {
         if(!onBoard(row,col) || grid[row][col].isClicked() || grid[row][col].rightClicked()){
             return;
         }
-        if(checkIfFirstClick()) stopwatch.start();
+        if(checkIfFirstClick()) {
+            generateBoard(row,col);
+            stopwatch.start();
+            updatePanel2Text();
+        }
         grid[row][col].setClicked();
 
         if(grid[row][col].getNumSurroundingMines() == 0 && !grid[row][col].hasMine()){
