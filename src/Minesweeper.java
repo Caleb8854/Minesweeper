@@ -5,11 +5,8 @@ import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-//import java.util.Timer;
-//import java.util.TimerTask;
 import javax.swing.Timer;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+
 
 import org.apache.commons.lang3.time.StopWatch;
 
@@ -21,6 +18,8 @@ public class Minesweeper extends JPanel implements MouseListener {
     private int boardWidth;
     private int boardHeight;
     private int flagCount;
+    private boolean leftPressed = false;
+    private boolean rightPressed = false;
     StopWatch stopwatch;
     private JPanel header;
     private Tile[][] grid;
@@ -133,11 +132,25 @@ public class Minesweeper extends JPanel implements MouseListener {
 
     @Override
     public void mousePressed(MouseEvent e) {
-
+        if(SwingUtilities.isLeftMouseButton(e)){
+            leftPressed = true;
+        }
+        if(SwingUtilities.isRightMouseButton(e)){
+            rightPressed = true;
+        }
+        if(leftPressed && rightPressed){
+            chord(e.getX(), e.getY());
+        }
     }
 
     @Override
     public void mouseReleased(MouseEvent e) {
+        if(SwingUtilities.isLeftMouseButton(e)){
+            leftPressed = false;
+        }
+        if(SwingUtilities.isRightMouseButton(e)){
+            rightPressed = false;
+        }
 
     }
 
@@ -224,9 +237,8 @@ public class Minesweeper extends JPanel implements MouseListener {
         int col = xpos/Constants.TILE_SIZE;
         int row = ypos/Constants.TILE_SIZE;
 
-        if(!onBoard(row,col) || grid[row][col].isClicked() || grid[row][col].rightClicked()){
-            return;
-        }
+        if(!onBoard(row,col) || grid[row][col].isClicked() || grid[row][col].rightClicked()) return;
+
         if(checkIfFirstClick()) {
             timer.start();
             stopwatch.start();
@@ -245,9 +257,7 @@ public class Minesweeper extends JPanel implements MouseListener {
         int col = xpos/Constants.TILE_SIZE;
         int row = ypos/Constants.TILE_SIZE;
 
-        if(!onBoard(row,col) || grid[row][col].isClicked()){
-            return;
-        }
+        if(!onBoard(row,col) || grid[row][col].isClicked()) return;
 
         if(grid[row][col].rightClicked()){
             grid[row][col].unsetRightClicked();
@@ -257,6 +267,35 @@ public class Minesweeper extends JPanel implements MouseListener {
             flagCount--;
         }
         repaint();
+    }
+
+    private void chord(int xpos, int ypos){
+        int col = xpos/Constants.TILE_SIZE;
+        int row = ypos/Constants.TILE_SIZE;
+
+        if(!grid[row][col].isClicked()) return;
+
+        if(countSurroundingFlags(row,col) == grid[row][col].getNumSurroundingMines()){
+            for(int i = row-1; i <= row+1; i++){
+                for(int j = col - 1; j <= col + 1; j++){
+                    if(onBoard(i,j) && !grid[i][j].rightClicked() && !grid[i][j].isClicked()) handleLeftClick(j * Constants.TILE_SIZE, i * Constants.TILE_SIZE);
+
+                }
+            }
+        }
+        repaint();
+
+    }
+
+    public int countSurroundingFlags(int r, int c){
+        int count = 0;
+        for(int i = r-1; i <= r+1; i++){
+            for(int j = c - 1; j <= c + 1; j++){
+                if(onBoard(i,j) && grid[i][j].rightClicked()) count++;
+
+            }
+        }
+        return count;
     }
 
     public void clickAllZeroTiles(int row, int col){
