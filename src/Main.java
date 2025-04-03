@@ -13,7 +13,7 @@ public class Main {
 
         JPanel header = new JPanel();
         header.setPreferredSize(new Dimension(width, 50));
-        header.setBackground(Color.BLUE);
+        header.setBackground(Constants.COLOR_DARK_GREEN);
         Minesweeper minesweeper = new Minesweeper(width, height - 50, header);
 
         frame.add(header, BorderLayout.NORTH);

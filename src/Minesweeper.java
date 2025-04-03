@@ -5,8 +5,11 @@ import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.Timer;
-import java.util.TimerTask;
+//import java.util.Timer;
+//import java.util.TimerTask;
+import javax.swing.Timer;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import org.apache.commons.lang3.time.StopWatch;
 
@@ -37,13 +40,10 @@ public class Minesweeper extends JPanel implements MouseListener {
         addMouseListener(this);
         board();
 
-        timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                updatePanel2Text();
-            }
-        }, 0, 1000);
+        timer = new Timer(1000, e -> updatePanel2Text());
+        timer.setInitialDelay(0);
+        updatePanel2Text();
+
     }
 
     public void updatePanel2Text() {
@@ -181,7 +181,6 @@ public class Minesweeper extends JPanel implements MouseListener {
             }
         }
 
-
         for(int r = 0; r < grid.length; r++){
             for(int c = 0; c < grid[r].length; c++){
                 grid[r][c].setNumSurroundingMines(countSurroundingMines(r,c));
@@ -229,8 +228,9 @@ public class Minesweeper extends JPanel implements MouseListener {
             return;
         }
         if(checkIfFirstClick()) {
-            generateBoard(row,col);
+            timer.start();
             stopwatch.start();
+            generateBoard(row,col);
             updatePanel2Text();
         }
         grid[row][col].setClicked();
@@ -279,10 +279,5 @@ public class Minesweeper extends JPanel implements MouseListener {
         return true;
     }
 
-
-
-
-
-    //get mouse coordinates when u click,calc index on array, update backend, update board
 
 }
