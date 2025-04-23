@@ -18,19 +18,31 @@ public class Minesweeper extends JPanel implements MouseListener {
     private int boardWidth;
     private int boardHeight;
     private int flagCount;
+    private long fastestTime;
     private boolean leftPressed = false;
     private boolean rightPressed = false;
+    private int numOpenTiles;
+    private boolean win;
+    private boolean end = false;
     StopWatch stopwatch;
     private JPanel header;
+    private JPanel endScreen;
+    private JPanel overlay;
+    private JButton restart;
+    private JLabel timeLabel;
     private Tile[][] grid;
-    private Graphics g;
     private Timer timer;
 
 
-    Minesweeper(int w, int h, JPanel panel){
+
+    Minesweeper(int w, int h, JPanel panel1, JPanel panel2, JPanel o){
         boardWidth = w;
         boardHeight = h;
-        header = panel;
+        header = panel1;
+        overlay = o;
+        endScreen = panel2;
+
+        endScreen.setVisible(false);
         setPreferredSize(new Dimension(boardWidth,boardHeight));
         setBackground(Color.white);
         flagCount = boardWidth/Constants.TILE_SIZE * boardHeight/Constants.TILE_SIZE / 5;
@@ -41,35 +53,89 @@ public class Minesweeper extends JPanel implements MouseListener {
 
         timer = new Timer(1000, e -> updatePanel2Text());
         timer.setInitialDelay(0);
+
+        restart = new JButton("Restart");
+
+        endScreen.setLayout(null);
+
         updatePanel2Text();
+        restart.addActionListener(e -> {
+            restart();
+        });
+
+        restart.setBounds(20, 30, 90, 22);
+        endScreen.add(restart);
+        restart.setVisible(true);
+
 
     }
 
     public void updatePanel2Text() {
-        header.removeAll();
         long time = stopwatch.getTime(TimeUnit.SECONDS);
-        JLabel label = new JLabel("Flags: " + flagCount + "   Time: " + time);
-        label.setForeground(Color.WHITE);
-        header.add(label);
+        String text = "Flags: " + flagCount + "   Time: " + time;
+
+        if(timeLabel == null){
+            timeLabel = new JLabel(text);
+            timeLabel.setForeground(Color.WHITE);
+            timeLabel.setFont(new Font("Helvetica", Font.PLAIN, 30));
+            header.add(timeLabel, BorderLayout.CENTER);
+        } else {
+            timeLabel.setText(text);
+        }
+
         header.revalidate();
         header.repaint();
     }
 
-    public void paintComponent(Graphics graphics){
-        this.g = graphics;
+    public void updateEndScreen(){
+        endScreen.removeAll();
+        overlay.setVisible(true);
+        restart.setVisible(true);
+        String timeText;
+        String personalBestText;
+
+        if (win) {
+            long time = stopwatch.getTime(TimeUnit.SECONDS);
+            timeText = "Time: " + time;
+
+            if (fastestTime == 0 || time < fastestTime) {
+                fastestTime = time;
+            }
+        } else {
+            timeText = "Time: ---";
+        }
+
+        if (fastestTime > 0) {
+            personalBestText = "PB: " + fastestTime;
+        } else {
+            personalBestText = "PB: ---";
+        }
+
+        JLabel label = new JLabel(timeText + "   " + personalBestText);
+        label.setBounds(138,30,120,22);
+        label.setForeground(Color.WHITE);
+        endScreen.add(label);
+        endScreen.add(restart);
+        endScreen.revalidate();
+        endScreen.repaint();
+
+
+    }
+
+    public void paintComponent(Graphics g){
         super.paintComponent(g);
 
         for(int r = 0; r < boardHeight/Constants.TILE_SIZE; r++){
             for(int c = 0; c < boardWidth/Constants.TILE_SIZE; c++){
-                fillTileBackground(r,c);
-                drawNumberOnTile(r,c);
+                fillTileBackground(r,c,g);
+                drawNumberOnTile(r,c,g);
             }
         }
         g.setColor(Color.BLACK);
         drawGridLines(g);
     }
 
-    public void fillTileBackground(int r, int c){
+    public void fillTileBackground(int r, int c, Graphics g){
         if(grid[r][c].rightClicked()){
             g.setColor(Constants.COLOR_FLAG);
         } else if(!grid[r][c].isClicked()){
@@ -85,7 +151,7 @@ public class Minesweeper extends JPanel implements MouseListener {
         g.fillRect(c * Constants.TILE_SIZE,r*Constants.TILE_SIZE,Constants.TILE_SIZE,Constants.TILE_SIZE);
     }
 
-    public void drawNumberOnTile(int r, int c){
+    public void drawNumberOnTile(int r, int c, Graphics g){
         if(grid[r][c].isClicked() && !grid[r][c].hasMine() && grid[r][c].getNumSurroundingMines() != 0){
             int x = c * Constants.TILE_SIZE + Constants.TILE_SIZE/2 - 5;
             int y = r * Constants.TILE_SIZE + Constants.TILE_SIZE/2 + 9;
@@ -107,18 +173,38 @@ public class Minesweeper extends JPanel implements MouseListener {
         }
 
     }
+
+    public void restart(){
+        endScreen.setVisible(false);
+        overlay.setVisible(false);
+        stopwatch.reset();
+        timer.stop();
+        flagCount = boardWidth / Constants.TILE_SIZE * boardHeight / Constants.TILE_SIZE / 5;
+        restart.setVisible(false);
+        end = false;
+        board();
+        repaint();
+        updatePanel2Text();
+
+    }
     @Override
     public void mouseClicked(MouseEvent e) {
 
-        PointerInfo a = MouseInfo.getPointerInfo();
-        Point point = new Point(a.getLocation());
-        SwingUtilities.convertPointFromScreen(point, e.getComponent());
-        int x =(int) point.getX();
-        int y=(int) point.getY();
+        if(end) return;
+        int x = e.getX();
+        int y = e.getY();
 
         if(e.getButton() == MouseEvent.BUTTON1){
 
             handleLeftClick(x,y);
+            if(numOpenTiles == 0){
+                timer.stop();
+                end = true;
+                win = true;
+                updateEndScreen();
+                endScreen.setVisible(true);
+            }
+
 
         } else if (e.getButton() == MouseEvent.BUTTON3){
 
@@ -132,6 +218,7 @@ public class Minesweeper extends JPanel implements MouseListener {
 
     @Override
     public void mousePressed(MouseEvent e) {
+        if(end) return;
         if(SwingUtilities.isLeftMouseButton(e)){
             leftPressed = true;
         }
@@ -145,6 +232,7 @@ public class Minesweeper extends JPanel implements MouseListener {
 
     @Override
     public void mouseReleased(MouseEvent e) {
+        if(end) return;
         if(SwingUtilities.isLeftMouseButton(e)){
             leftPressed = false;
         }
@@ -179,6 +267,7 @@ public class Minesweeper extends JPanel implements MouseListener {
     public void generateBoard(int rowFirstClicked, int colFirstClicked){
         int numMines = boardWidth/Constants.TILE_SIZE * boardHeight/Constants.TILE_SIZE / 5;
         int count = 0;
+        numOpenTiles = boardWidth / Constants.TILE_SIZE * boardHeight/ Constants.TILE_SIZE - numMines;
         grid[rowFirstClicked][colFirstClicked].setNumSurroundingMines(0);
         ArrayList<Tile> allSurroundingTiles = surroundingTiles(rowFirstClicked,colFirstClicked);
         while(count < numMines){
@@ -237,6 +326,7 @@ public class Minesweeper extends JPanel implements MouseListener {
         int col = xpos/Constants.TILE_SIZE;
         int row = ypos/Constants.TILE_SIZE;
 
+
         if(!onBoard(row,col) || grid[row][col].isClicked() || grid[row][col].rightClicked()) return;
 
         if(checkIfFirstClick()) {
@@ -246,7 +336,15 @@ public class Minesweeper extends JPanel implements MouseListener {
             updatePanel2Text();
         }
         grid[row][col].setClicked();
-
+        numOpenTiles--;
+        if(grid[row][col].hasMine()) {
+            timer.stop();
+            end = true;
+            win = false;
+            revealRemainingMines();
+            updateEndScreen();
+            endScreen.setVisible(true);
+        }
         if(grid[row][col].getNumSurroundingMines() == 0 && !grid[row][col].hasMine()){
             clickAllZeroTiles(row,col);
         }
@@ -287,6 +385,15 @@ public class Minesweeper extends JPanel implements MouseListener {
 
     }
 
+    public void revealRemainingMines(){
+        for(int r = 0; r < grid.length; r++){
+            for(int c = 0; c < grid[r].length; c++){
+                if(grid[r][c].hasMine() && !grid[r][c].rightClicked()) grid[r][c].setClicked();
+                if(!grid[r][c].hasMine() && grid[r][c].rightClicked()) grid[r][c].unsetRightClicked();
+            }
+        }
+    }
+
     public int countSurroundingFlags(int r, int c){
         int count = 0;
         for(int i = r-1; i <= r+1; i++){
@@ -317,6 +424,7 @@ public class Minesweeper extends JPanel implements MouseListener {
         }
         return true;
     }
+
 
 
 }

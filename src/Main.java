@@ -6,18 +6,48 @@ public class Main {
 
         int width = 800;
         int height = 650;
+        int headerHeight = 50;
 
         JFrame frame = new JFrame("Minesweeper");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
 
-        JPanel header = new JPanel();
-        header.setPreferredSize(new Dimension(width, 50));
-        header.setBackground(Constants.COLOR_DARK_GREEN);
-        Minesweeper minesweeper = new Minesweeper(width, height - 50, header);
+        JLayeredPane layeredPane = new JLayeredPane();
+        layeredPane.setPreferredSize(new Dimension(width,height));
 
-        frame.add(header, BorderLayout.NORTH);
-        frame.add(minesweeper, BorderLayout.CENTER);
+        JPanel header = new JPanel();
+        header.setPreferredSize(new Dimension(width, headerHeight));
+        header.setBackground(Constants.COLOR_DARK_GREEN);
+
+        JPanel endScreen = new JPanel();
+        endScreen.setPreferredSize(new Dimension(300,300));
+        endScreen.setBackground(Color.BLUE);
+
+        JPanel overlay = new JPanel(){
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.setColor(new Color(0, 0, 0, 150));
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        overlay.setOpaque(false);
+        overlay.setBounds(0, 0, width, height); // Covers everything
+        overlay.setVisible(false);
+
+
+        Minesweeper minesweeper = new Minesweeper(width, height - 50, header, endScreen, overlay);
+
+        header.setBounds(0, 0, width, headerHeight);
+        minesweeper.setBounds(0, headerHeight, width, height - headerHeight);
+        endScreen.setBounds(width/2 - 150, height/2 - 150, 300, 300);
+
+        layeredPane.add(header, JLayeredPane.DEFAULT_LAYER);
+        layeredPane.add(minesweeper, JLayeredPane.DEFAULT_LAYER);
+        layeredPane.add(endScreen, JLayeredPane.POPUP_LAYER);
+        layeredPane.add(overlay, JLayeredPane.MODAL_LAYER);
+
+        frame.add(layeredPane);
 
         frame.pack();
         frame.setLocationRelativeTo(null);
