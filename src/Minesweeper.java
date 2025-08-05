@@ -90,7 +90,11 @@ public class Minesweeper extends JPanel implements MouseListener {
     public void updateEndScreen(){
         endScreen.removeAll();
         overlay.setVisible(true);
-        restart.setVisible(true);
+
+        endScreen.setBackground(Color.WHITE);
+        endScreen.setOpaque(true);
+        endScreen.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 2, true));
+
         String timeText;
         String personalBestText;
 
@@ -111,11 +115,21 @@ public class Minesweeper extends JPanel implements MouseListener {
             personalBestText = "PB: ---";
         }
 
-        JLabel label = new JLabel(timeText + "   " + personalBestText);
-        label.setBounds(138,30,120,22);
-        label.setForeground(Color.WHITE);
+        JLabel label = new JLabel(timeText + "   " + personalBestText, SwingConstants.CENTER);
+        label.setBounds(40, 30, 200, 30);
+        label.setForeground(Color.DARK_GRAY);
+        label.setFont(new Font("SansSerif", Font.PLAIN, 18));
         endScreen.add(label);
+
+        restart.setBounds(95, 80, 90, 30);
+        restart.setFont(new Font("SansSerif", Font.BOLD, 14));
+        restart.setFocusPainted(false);
+        restart.setBackground(new Color(240, 240, 240));
+        restart.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        restart.setVisible(true);
+
         endScreen.add(restart);
+        endScreen.setVisible(true);
         endScreen.revalidate();
         endScreen.repaint();
 
@@ -136,29 +150,30 @@ public class Minesweeper extends JPanel implements MouseListener {
     }
 
     public void fillTileBackground(int r, int c, Graphics g){
-        if(grid[r][c].rightClicked()){
+        int x = c * Constants.TILE_SIZE;
+        int y = r * Constants.TILE_SIZE;
+        int arc = 8;
+
+        if (grid[r][c].rightClicked()) {
             g.setColor(Constants.COLOR_FLAG);
-        } else if(!grid[r][c].isClicked()){
+        } else if (!grid[r][c].isClicked()) {
             g.setColor(Constants.COLOR_GREEN);
         } else {
-            if(!grid[r][c].hasMine()){
-                g.setColor(Constants.COLOR_BROWN);
-            } else {
-                g.setColor(Constants.COLOR_MINE);
-            }
+            g.setColor(grid[r][c].hasMine() ? Constants.COLOR_MINE : Constants.COLOR_BROWN);
         }
 
-        g.fillRect(c * Constants.TILE_SIZE,r*Constants.TILE_SIZE,Constants.TILE_SIZE,Constants.TILE_SIZE);
+        g.fillRoundRect(x, y, Constants.TILE_SIZE, Constants.TILE_SIZE, arc, arc);
     }
 
     public void drawNumberOnTile(int r, int c, Graphics g){
-        if(grid[r][c].isClicked() && !grid[r][c].hasMine() && grid[r][c].getNumSurroundingMines() != 0){
-            int x = c * Constants.TILE_SIZE + Constants.TILE_SIZE/2 - 5;
-            int y = r * Constants.TILE_SIZE + Constants.TILE_SIZE/2 + 9;
+        if (grid[r][c].isClicked() && !grid[r][c].hasMine() && grid[r][c].getNumSurroundingMines() != 0) {
+            int num = grid[r][c].getNumSurroundingMines();
+            int x = c * Constants.TILE_SIZE + Constants.TILE_SIZE / 2 - 7;
+            int y = r * Constants.TILE_SIZE + Constants.TILE_SIZE / 2 + 8;
 
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Arial", Font.BOLD, 25));
-            g.drawString(grid[r][c].getNumSurroundingMines() + "", x, y);
+            g.setColor(Constants.NUMBER_COLORS[num]);
+            g.setFont(new Font("SansSerif", Font.BOLD, 20));
+            g.drawString(String.valueOf(num), x, y);
         }
     }
 

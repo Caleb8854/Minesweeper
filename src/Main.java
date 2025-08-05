@@ -17,11 +17,13 @@ public class Main {
 
         JPanel header = new JPanel();
         header.setPreferredSize(new Dimension(width, headerHeight));
-        header.setBackground(Constants.COLOR_DARK_GREEN);
+        header.setBackground(Constants.COLOR_GREEN);
 
         JPanel endScreen = new JPanel();
-        endScreen.setPreferredSize(new Dimension(300,300));
-        endScreen.setBackground(Color.BLUE);
+        endScreen.setBackground(new Color(255, 255, 255));
+        endScreen.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 2, true));
+        endScreen.setLayout(null);
+        endScreen.setOpaque(true);
 
         JPanel overlay = new JPanel(){
             @Override
@@ -32,7 +34,7 @@ public class Main {
             }
         };
         overlay.setOpaque(false);
-        overlay.setBounds(0, 0, width, height); // Covers everything
+        overlay.setBounds(0, 0, width, height);
         overlay.setVisible(false);
 
 
